@@ -1,4 +1,4 @@
-CFLAGS=-std=c11 -g -static
+CFLAGS=-std=c11 -g -static -Wall -pedantic
 
 kwcc: kwcc.c
 	cc $(CFLAGS) -o kwcc kwcc.c
