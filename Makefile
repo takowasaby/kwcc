@@ -1,7 +1,11 @@
 CFLAGS=-std=c11 -g -static -Wall -pedantic
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-kwcc: kwcc.c
-	cc $(CFLAGS) -o kwcc kwcc.c
+kwcc: $(OBJS)
+	cc -o kwcc $(OBJS) $(LDFLAGS)  
+
+$(OBJS): kwcc.h
 
 test: kwcc
 		./test.sh
