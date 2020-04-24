@@ -33,8 +33,7 @@ typedef enum {
     ND_LT,
     ND_LE,
     ND_ASN,
-    ND_STMT,
-    ND_IDNT,
+    ND_LVAR,
 } NodeKind;
 
 typedef struct Node Node;
@@ -44,7 +43,7 @@ struct Node {
     Node *lhs;
     Node *rhs;
     int val;
-    char *str;
+    int index;
 };
 
 void error_at(char *loc, char *fmt, ...);
@@ -66,7 +65,7 @@ Token *tokenize(char *p);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_identifier(char *str);
+Node *new_node_identifier(int index);
 
 Node *primary();
 Node *unary();

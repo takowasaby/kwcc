@@ -114,10 +114,10 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Node *new_node_identifier(char *str) {
+Node *new_node_identifier(int index) {
     Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_IDNT;
-    node->str = str;
+    node->kind = ND_LVAR;
+    node->index = index;
     return node;
 }
 
@@ -129,7 +129,8 @@ Node *primary() {
     }
     char *identifier;
     if (consume_identifier(&identifier)) {
-        return new_node_identifier(identifier);
+        int index = (identifier[0] - 'a');
+        return new_node_identifier(index);
     }
 
     return new_node_num(expect_number());

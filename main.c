@@ -11,10 +11,18 @@ int compile_main() {
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
-    
-    gen(code[0]);
 
-    printf("    pop rax\n");
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+    printf("    sub rsp, 208\n");
+    
+    for (int i = 0; code[i] != NULL; i++) {
+        gen(code[i]);
+        printf("    pop rax\n");
+    }
+
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
     printf("    ret\n");
     
     return 0;
@@ -22,9 +30,11 @@ int compile_main() {
 
 int parse_main() {
     token = tokenize(user_input);
-    Node* node = stmt();
+    program();
 
-    tree_gen(node);
+    for (int i = 0; code[i] != NULL; i++) {
+        tree_gen(code[i]);
+    }
     
     return 0;
 }
@@ -40,8 +50,10 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         char *p = argv[i];
-        if (p[0] == '-') {
-            executeParseMode = true;
+        if (strncmp("--", p, 2) == 0) {
+            if (strncmp("parse", p + 2, 5) == 0) {
+                executeParseMode = true;
+            }
         } else {
             isExistInput = true;
             user_input = argv[i];

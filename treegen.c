@@ -9,8 +9,8 @@ void print_node(Node *node, int depth) {
     case ND_NUM:
         printf("%d\n", node->val);
         return;
-    case ND_IDNT:
-        printf("%s\n", node->str);
+    case ND_LVAR:
+        printf("[rbp-%d]\n", (node->index + 1) * 8);
         return;
     case ND_ADD:
         printf("ADD\n");
@@ -38,9 +38,6 @@ void print_node(Node *node, int depth) {
         break;
     case ND_ASN:
         printf("ASN\n");
-        break;
-    case ND_STMT:
-        printf("STMT\n");
         break;
     default:
         error("構文木のノードの種類が不適切です");
