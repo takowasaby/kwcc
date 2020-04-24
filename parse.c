@@ -1,6 +1,5 @@
 #include "kwcc.h"
 
-// 次のトークンが期待している記号の場合、トークンを一つ読み進めて真を返す
 bool consume(char *op) {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
@@ -11,8 +10,20 @@ bool consume(char *op) {
     return true;
 }
 
-// 次のトークンが期待している記号の場合、トークンを読み進める
-// そうでない場合エラーを報告する
+bool consume_identifier(char **dst) {
+    if (token->kind != TK_IDENT) {
+        return false;
+    }
+
+    char *new_str = calloc(token->len + 1, sizeof(char));
+    strncpy(new_str, token->str, token->len);
+    new_str[token->len] = '\0';
+
+    *dst = new_str;
+    token = token->next;
+    return true;
+}
+
 void expect(char *op) {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
@@ -22,8 +33,6 @@ void expect(char *op) {
     token = token->next;
 }
 
-// 次のトークンが数値だった場合、トークンを読み進めて数値を返す
-// そうでない場合エラーを報告する
 int expect_number() {
     if (token->kind != TK_NUM) {
         error_at(token->str, "数ではありません");
@@ -63,8 +72,15 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (strchr("+-*/()<>", *p)) {
+        if (strchr("+-*/()<>=;", *p)) {
             cur = new_token(TK_RESERVED, cur, p);
+            cur->len = 1;
+            p += cur->len;
+            continue;
+        }
+
+        if ('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p);
             cur->len = 1;
             p += cur->len;
             continue;
@@ -98,11 +114,22 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *new_node_identifier(char *str) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_IDNT;
+    node->str = str;
+    return node;
+}
+
 Node *primary() {
     if (consume("(")) {
         Node *node = expr();
         expect(")");
         return node;
+    }
+    char *identifier;
+    if (consume_identifier(&identifier)) {
+        return new_node_identifier(identifier);
     }
 
     return new_node_num(expect_number());
@@ -177,6 +204,31 @@ Node *equality() {
     }
 }
 
+Node *assign() {
+    Node *node = equality();
+
+    if (consume("=")) {
+        return new_node(ND_ASN, node, assign());
+    }
+
+    return node;
+}
+
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+Node *stmt() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
+void program() {
+    int i = 0;
+    while (!at_eof()) {
+        code[i] = stmt();
+        i++;
+    }
+    code[i] = NULL;
 }

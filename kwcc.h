@@ -7,6 +7,7 @@
 
 typedef enum {
     TK_RESERVED,
+    TK_IDENT,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -31,6 +32,9 @@ typedef enum {
     ND_NE,
     ND_LT,
     ND_LE,
+    ND_ASN,
+    ND_STMT,
+    ND_IDNT,
 } NodeKind;
 
 typedef struct Node Node;
@@ -40,6 +44,7 @@ struct Node {
     Node *lhs;
     Node *rhs;
     int val;
+    char *str;
 };
 
 void error_at(char *loc, char *fmt, ...);
@@ -47,6 +52,7 @@ void error(char *fmt, ...);
 
 // 次のトークンが期待している記号の場合、トークンを一つ読み進めて真を返す
 bool consume(char *op);
+bool consume_identifier(char **dst);
 // 次のトークンが期待している記号の場合、トークンを読み進める
 // そうでない場合エラーを報告する
 void expect(char *op);
@@ -60,6 +66,7 @@ Token *tokenize(char *p);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Node *new_node_identifier(char *str);
 
 Node *primary();
 Node *unary();
@@ -67,9 +74,16 @@ Node *mul();
 Node *add();
 Node *relational();
 Node *equality();
+Node *assign();
 Node *expr();
+Node *stmt();
+void program();
 
 void gen(Node *node);
 
+void print_node(Node *node, int depth);
+void tree_gen(Node *node);
+
 extern Token *token;
+extern Node *code[256];
 extern char *user_input;
