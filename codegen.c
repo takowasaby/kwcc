@@ -92,7 +92,7 @@ void code_gen() {
 
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, 208\n");
+    printf("    sub rsp, %d\n", (locals->index + 1) * 8);
     
     for (int i = 0; code[i] != NULL; i++) {
         gen(code[i]);

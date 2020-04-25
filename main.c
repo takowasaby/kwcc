@@ -1,6 +1,7 @@
 #include "kwcc.h"
 
 Token *token;
+LVar *locals;
 Node *code[256];
 char *user_input;
 

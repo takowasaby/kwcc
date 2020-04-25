@@ -32,5 +32,8 @@ assert 0 "7>1+2*4;"
 assert 5 "a=5;"
 assert 2 "z=1+5*2;-9+z;"
 assert 6 "a=1+2;b=a-1;a*b;"
+assert 5 "aaa=5;"
+assert 2 "_z=1+5*2;-9+_z;"
+assert 6 "f00=1+2;_B_A_R_=f00-1;f00*_B_A_R_;"
 
 echo OK

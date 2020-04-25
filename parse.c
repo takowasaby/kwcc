@@ -1,56 +1,32 @@
 #include "kwcc.h"
 
-bool consume(char *op) {
-    if (token->kind != TK_RESERVED ||
-        strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)) {
-        return false;
-    }
-    token = token->next;
-    return true;
-}
-
-bool consume_identifier(char **dst) {
-    if (token->kind != TK_IDENT) {
-        return false;
-    }
-
-    char *new_str = calloc(token->len + 1, sizeof(char));
-    strncpy(new_str, token->str, token->len);
-    new_str[token->len] = '\0';
-
-    *dst = new_str;
-    token = token->next;
-    return true;
-}
-
-void expect(char *op) {
-    if (token->kind != TK_RESERVED ||
-        strlen(op) != token->len ||
-        memcmp(token->str, op, token->len)) {
-        error_at(token->str, "指定されたトークンは'%c'ではありません", op);
-    }
-    token = token->next;
-}
-
-int expect_number() {
-    if (token->kind != TK_NUM) {
-        error_at(token->str, "数ではありません");
-    }
-    int val = token->val;
-    token = token->next;
-    return val;
-}
-
-bool at_eof() {
-    return token->kind == TK_EOF;
-}
-
 Token *new_token(TokenKind kind, Token *cur, char *str) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
     cur->next = tok;
+    return tok;
+}
+
+bool is_in_idnet_tail(char c) {
+    return ('a' <= c && c <= 'z')
+        || ('A' <= c && c <= 'Z')
+        || ('0' <= c && c <= '9')
+        || c == '_';
+}
+
+Token *new_token_identifier(Token *cur, char *str) {
+    Token *tok = calloc(1, sizeof(Token));
+    tok->kind = TK_IDENT;
+    tok->str = str;
+    cur->next = tok;
+
+    char *itr = str + 1;
+    while(is_in_idnet_tail(*itr)) {
+        itr++;
+    }
+    tok->len = itr - str;
+
     return tok;
 }
 
@@ -79,9 +55,8 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p);
-            cur->len = 1;
+        if (('a' <= *p && *p <= 'z') || ('A' <= *p && *p <= 'Z') || *p == '_') {
+            cur = new_token_identifier(cur, p);
             p += cur->len;
             continue;
         }
@@ -97,6 +72,66 @@ Token *tokenize(char *p) {
 
     new_token(TK_EOF, cur, p);
     return head.next;
+}
+
+LVar *add_lvar(Token *token) {
+    LVar *lvar = calloc(1, sizeof(LVar));
+    lvar->name = token->str;
+    lvar->len = token->len;
+    lvar->index = locals->index + 1;
+    lvar->next = locals;
+    locals = lvar;
+    return lvar;
+}
+
+LVar *find_lvar(Token *token) {
+    for (LVar *itr = locals; itr; itr = itr->next) {
+        if (token->len == itr->len && strncmp(token->str, itr->name, token->len) == 0) {
+            return itr;
+        }
+    }
+    return NULL;
+}
+
+bool consume(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
+        return false;
+    }
+    token = token->next;
+    return true;
+}
+
+Token *consume_identifier() {
+    if (token->kind != TK_IDENT) {
+        return NULL;
+    }
+    Token *ret = token;
+    token = token->next;
+    return ret;
+}
+
+void expect(char *op) {
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len)) {
+        error_at(token->str, "指定されたトークンは'%c'ではありません", op);
+    }
+    token = token->next;
+}
+
+int expect_number() {
+    if (token->kind != TK_NUM) {
+        error_at(token->str, "数ではありません");
+    }
+    int val = token->val;
+    token = token->next;
+    return val;
+}
+
+bool at_eof() {
+    return token->kind == TK_EOF;
 }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
@@ -127,10 +162,15 @@ Node *primary() {
         expect(")");
         return node;
     }
-    char *identifier;
-    if (consume_identifier(&identifier)) {
-        int index = (identifier[0] - 'a');
-        return new_node_identifier(index);
+    Token* maybe_identifier = consume_identifier();
+    if (maybe_identifier) {
+        LVar *lvar = find_lvar(maybe_identifier);
+        if (lvar) {
+            return new_node_identifier(lvar->index);
+        } else {
+            LVar *newLVar = add_lvar(maybe_identifier);
+            return new_node_identifier(newLVar->index);
+        }
     }
 
     return new_node_num(expect_number());
@@ -226,6 +266,12 @@ Node *stmt() {
 }
 
 void program() {
+    locals = calloc(1, sizeof(LVar));
+    locals->index = -1;
+    locals->name = "";
+    locals->len = 0;
+    locals->next = NULL;
+
     int i = 0;
     while (!at_eof()) {
         code[i] = stmt();
