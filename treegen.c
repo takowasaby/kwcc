@@ -39,6 +39,10 @@ void print_node(Node *node, int depth) {
     case ND_ASN:
         printf("ASN\n");
         break;
+    case ND_RETURN:
+        printf("RETURN\n");
+        print_node(node->lhs, depth + 1);
+        return;
     default:
         error("構文木のノードの種類が不適切です");
         break;

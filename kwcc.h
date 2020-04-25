@@ -6,6 +6,7 @@
 #include <string.h>
 
 typedef enum {
+    TK_RETURN,
     TK_RESERVED,
     TK_IDENT,
     TK_NUM,
@@ -43,6 +44,7 @@ typedef enum {
     ND_LE,
     ND_ASN,
     ND_LVAR,
+    ND_RETURN,
 } NodeKind;
 
 typedef struct Node Node;
@@ -61,12 +63,13 @@ void error(char *fmt, ...);
 LVar *add_lvar(Token *token);
 LVar *find_lvar(Token *token);
 
+bool consume(TokenKind kind);
 // 次のトークンが期待している記号の場合、トークンを一つ読み進めて真を返す
-bool consume(char *op);
+bool consume_reserved(char *op);
 Token *consume_identifier();
 // 次のトークンが期待している記号の場合、トークンを読み進める
 // そうでない場合エラーを報告する
-void expect(char *op);
+void expect_reserved(char *op);
 // 次のトークンが数値だった場合、トークンを読み進めて数値を返す
 // そうでない場合エラーを報告する
 int expect_number();

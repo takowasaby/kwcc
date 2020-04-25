@@ -55,6 +55,13 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        if (strncmp("return", p, 6) == 0 && !is_in_idnet_tail(p[6])) {
+            cur = new_token(TK_RETURN, cur, p);
+            cur->len = 6;
+            p += cur->len;
+            continue;
+        }
+
         if (('a' <= *p && *p <= 'z') || ('A' <= *p && *p <= 'Z') || *p == '_') {
             cur = new_token_identifier(cur, p);
             p += cur->len;
@@ -93,7 +100,15 @@ LVar *find_lvar(Token *token) {
     return NULL;
 }
 
-bool consume(char *op) {
+bool consume(TokenKind kind) {
+    if (token->kind != kind) {
+        return false;
+    }
+    token = token->next;
+    return true;
+}
+
+bool consume_reserved(char *op) {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)) {
@@ -112,11 +127,11 @@ Token *consume_identifier() {
     return ret;
 }
 
-void expect(char *op) {
+void expect_reserved(char *op) {
     if (token->kind != TK_RESERVED ||
         strlen(op) != token->len ||
         memcmp(token->str, op, token->len)) {
-        error_at(token->str, "指定されたトークンは'%c'ではありません", op);
+        error_at(token->str, "指定されたトークンは'%s'ではありません", op);
     }
     token = token->next;
 }
@@ -157,9 +172,9 @@ Node *new_node_identifier(int index) {
 }
 
 Node *primary() {
-    if (consume("(")) {
+    if (consume_reserved("(")) {
         Node *node = expr();
-        expect(")");
+        expect_reserved(")");
         return node;
     }
     Token* maybe_identifier = consume_identifier();
@@ -177,9 +192,9 @@ Node *primary() {
 }
 
 Node *unary() {
-    if (consume("+")) {
+    if (consume_reserved("+")) {
         return primary();
-    } else if (consume("-")) {
+    } else if (consume_reserved("-")) {
         return new_node(ND_SUB, new_node_num(0), primary());
     }
     return primary();
@@ -189,9 +204,9 @@ Node *mul() {
     Node *node = unary();
 
     for (;;) {
-        if (consume("*")) {
+        if (consume_reserved("*")) {
             node = new_node(ND_MUL, node, unary());
-        } else if (consume("/")) {
+        } else if (consume_reserved("/")) {
             node = new_node(ND_DIV, node, unary());
         } else {
             return node;
@@ -203,9 +218,9 @@ Node *add() {
     Node *node = mul();
 
     for (;;) {
-        if (consume("+")) {
+        if (consume_reserved("+")) {
             node = new_node(ND_ADD, node, mul());
-        } else if (consume("-")) {
+        } else if (consume_reserved("-")) {
             node = new_node(ND_SUB, node, mul());
         } else {
             return node;
@@ -217,13 +232,13 @@ Node *relational() {
     Node *node = add();
 
     for (;;) {
-        if (consume("<")) {
+        if (consume_reserved("<")) {
             node = new_node(ND_LT, node, add());
-        } else if (consume("<=")) {
+        } else if (consume_reserved("<=")) {
             node = new_node(ND_LE, node, add());
-        } else if (consume(">")) {
+        } else if (consume_reserved(">")) {
             node = new_node(ND_LE, add(), node);
-        } else if (consume(">=")) {
+        } else if (consume_reserved(">=")) {
             node = new_node(ND_LT, add(), node);
         } else {
             return node;
@@ -235,9 +250,9 @@ Node *equality() {
     Node *node = relational();
 
     for (;;) {
-        if (consume("==")) {
+        if (consume_reserved("==")) {
             node = new_node(ND_EQ, node, relational());
-        } else if (consume("!=")) {
+        } else if (consume_reserved("!=")) {
             node = new_node(ND_NE, node, relational());
         } else {
             return node;
@@ -248,7 +263,7 @@ Node *equality() {
 Node *assign() {
     Node *node = equality();
 
-    if (consume("=")) {
+    if (consume_reserved("=")) {
         return new_node(ND_ASN, node, assign());
     }
 
@@ -260,9 +275,17 @@ Node *expr() {
 }
 
 Node *stmt() {
-    Node *node = expr();
-    expect(";");
-    return node;
+    if (consume(TK_RETURN)) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_RETURN;
+        node->lhs = expr();
+        expect_reserved(";");
+        return node;
+    } else {
+        Node *node = expr();
+        expect_reserved(";");
+        return node;
+    }
 }
 
 void program() {
