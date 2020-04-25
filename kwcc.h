@@ -78,7 +78,9 @@ Node *expr();
 Node *stmt();
 void program();
 
+void gen_lval(Node *node) ;
 void gen(Node *node);
+void code_gen();
 
 void print_node(Node *node, int depth);
 void tree_gen(Node *node);
