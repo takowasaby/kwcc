@@ -29,28 +29,36 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    bool isExistInput = false;
-    bool executeParseMode = false;
+    bool is_exist_input = false;
+    bool execute_parse_mode = false;
+    bool execute_vectest_mode = false;
 
     for (int i = 1; i < argc; i++) {
         char *p = argv[i];
         if (strncmp("--", p, 2) == 0) {
             if (strncmp("parse", p + 2, 5) == 0) {
-                executeParseMode = true;
+                execute_parse_mode = true;
+            }
+            if (strncmp("vectest", p + 2, 7) == 0) {
+                execute_vectest_mode = true;
             }
         } else {
-            isExistInput = true;
+            is_exist_input = true;
             user_input = argv[i];
         }
     }
 
-    if (!isExistInput) {
+    if (!is_exist_input) {
         error("引数が正しくありません\n");
         return 1;
     }
 
-    if (executeParseMode) {
+    if (execute_parse_mode) {
         return parse_main();
+    }
+
+    if (execute_vectest_mode) {
+        return vec_test();
     }
 
     return compile_main();

@@ -84,6 +84,21 @@ struct Node {
     int index;
 };
 
+typedef struct Vec Vec;
+
+struct Vec {
+    void **fst;
+    int size;
+    int cap;
+};
+
+Vec *vec_create(int cap);
+void vec_push_back(Vec* vec, void *elem);
+void *vec_at(Vec* vec, int index);
+int vec_size(Vec* vec);
+void vec_release(Vec* vec);
+int vec_test();
+
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 
